@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>立春＋東西四命判斷（1931–2030）</title>
+  <meta name="description" content="輸入生日與性別，依二十四節氣的立春為年界（當日視為已過），判斷命卦與東/西四命，並給出好方位。">
+  <style>
+    :root { --bg:#f7f7fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --accent:#0ea5e9; --ok:#16a34a; --warn:#ef4444; --border:#e5e7eb; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+    .wrap{max-width:920px;margin:32px auto;padding:0 16px} h1{font-size:22px;margin:0 0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(12,1fr)} .col-6{grid-column:span 6} .col-12{grid-column:span 12}
+    label{font-weight:600;display:block;margin-bottom:6px}
+    input[type="date"],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--text)}
+    .hint{color:var(--muted);font-size:13px}
+    .btn{appearance:none;border:1px solid var(--accent);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;transition:filter .2s}
+    .btn.secondary{background:#fff;color:var(--accent)} .btn:hover{filter:brightness(0.97)}
+    .result{margin-top:16px;padding:16px;border-radius:12px;background:#f0f9ff;border:1px solid #bae6fd}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;line-height:20px;border:1px solid var(--border);color:var(--muted);background:#fafafa}
+    .ok{color:#065f46;background:#ecfdf5;border-color:#a7f3d0} .warn{color:#7f1d1d;background:#fef2f2;border-color:#fecaca}
+    .table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+    .table th,.table td{border:1px solid var(--border);padding:8px 10px;text-align:left} .table th{background:#f9fafb}
+    .footer{margin-top:12px;font-size:12px;color:var(--muted)} @media(max-width:720px){.col-6{grid-column:span 12}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>立春＋東西四命判斷（1931–2030）</h1>
+    <div class="card">
+      <div class="grid">
+        <div class="col-6">
+          <label for="birth">出生日期（西元）</label>
+          <input id="birth" type="date" min="1931-01-01" max="2030-12-31" />
+          <div class="hint">規則固定：<b>立春當日視為已過立春</b>。支援 1931–2030。</div>
+        </div>
+        <div class="col-6">
+          <label for="gender">性別</label>
+          <select id="gender">
+            <option value="" selected disabled>請選擇性別</option>
+            <option value="M">男生</option>
+            <option value="F">女生</option>
+          </select>
+          <div class="hint">後續用於命卦與東/西四命判斷。</div>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:8px">
+        <div class="col-12">
+          <button class="btn" id="checkBtn">判斷</button>
+          <button class="btn secondary" id="todayBtn">用今天</button>
+        </div>
+      </div>
+
+      <div id="out" class="result" style="display:none"></div>
+
+      <details style="margin-top:14px">
+        <summary class="hint">查看 1931–2030 每年立春日期（UTC+8）</summary>
+        <table class="table" id="table"></table>
+      </details>
+
+      <div class="footer">
+        此工具以<b>二十四節氣之「立春」</b>為年份分界；立春日前 → 用前年；立春日與之後 → 用當年。命卦採常用簡化算法（含 2000 年前/後與 5 的性別替代）。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const LICHUN = {
+      1931: "1931-02-05", 1932: "1932-02-05", 1933: "1933-02-04", 1934: "1934-02-04", 1935: "1935-02-05", 1936: "1936-02-05",
+      1937: "1937-02-04", 1938: "1938-02-04", 1939: "1939-02-05", 1940: "1940-02-05", 1941: "1941-02-04", 1942: "1942-02-04",
+      1943: "1943-02-05", 1944: "1944-02-05", 1945: "1945-02-04", 1946: "1946-02-04", 1947: "1947-02-04", 1948: "1948-02-05",
+      1949: "1949-02-04", 1950: "1950-02-04", 1951: "1951-02-04", 1952: "1952-02-05", 1953: "1953-02-04", 1954: "1954-02-04",
+      1955: "1955-02-04", 1956: "1956-02-05", 1957: "1957-02-04", 1958: "1958-02-04", 1959: "1959-02-04", 1960: "1960-02-05",
+      1961: "1961-02-04", 1962: "1962-02-04", 1963: "1963-02-04", 1964: "1964-02-05", 1965: "1965-02-04", 1966: "1966-02-04",
+      1967: "1967-02-04", 1968: "1968-02-05", 1969: "1969-02-04", 1970: "1970-02-04", 1971: "1971-02-04", 1972: "1972-02-05",
+      1973: "1973-02-04", 1974: "1974-02-04", 1975: "1975-02-04", 1976: "1976-02-05", 1977: "1977-02-04", 1978: "1978-02-04",
+      1979: "1979-02-04", 1980: "1980-02-05", 1981: "1981-02-04", 1982: "1982-02-04", 1983: "1983-02-04", 1984: "1984-02-04",
+      1985: "1985-02-04", 1986: "1986-02-04", 1987: "1987-02-04", 1988: "1988-02-04", 1989: "1989-02-04", 1990: "1990-02-04",
+      1991: "1991-02-04", 1992: "1992-02-04", 1993: "1993-02-04", 1994: "1994-02-04", 1995: "1995-02-04", 1996: "1996-02-04",
+      1997: "1997-02-04", 1998: "1998-02-04", 1999: "1999-02-04", 2000: "2000-02-04", 2001: "2001-02-04", 2002: "2002-02-04",
+      2003: "2003-02-04", 2004: "2004-02-04", 2005: "2005-02-04", 2006: "2006-02-04", 2007: "2007-02-04", 2008: "2008-02-04",
+      2009: "2009-02-04", 2010: "2010-02-04", 2011: "2011-02-04", 2012: "2012-02-04", 2013: "2013-02-04", 2014: "2014-02-04",
+      2015: "2015-02-04", 2016: "2016-02-04", 2017: "2017-02-03", 2018: "2018-02-04", 2019: "2019-02-04", 2020: "2020-02-04",
+      2021: "2021-02-03", 2022: "2022-02-04", 2023: "2023-02-04", 2024: "2024-02-04", 2025: "2025-02-03", 2026: "2026-02-04",
+      2027: "2027-02-04", 2028: "2028-02-04", 2029: "2029-02-03", 2030: "2030-02-04",
+    };
+    const EAST = new Set([1,3,4,9]);
+    const WEST = new Set([2,6,7,8]);
+    const GUA_NAME = {1:'坎',2:'坤',3:'震',4:'巽',6:'乾',7:'兌',8:'艮',9:'離'};
+
+    const $ = (sel)=>document.querySelector(sel);
+    const ymdToNum = s => { const [y,m,d]=s.split('-').map(Number); return y*10000 + m*100 + d; };
+    function parseDateInput(value){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+      const [y,m,d]=value.split('-').map(n=>parseInt(n,10));
+      return { y, m, d, num: y*10000 + m*100 + d };
+    }
+    function digitRootOfYY(year){ const yy=year%100; const s=Math.floor(yy/10)+(yy%10); return ((s-1)%9)+1; }
+    function mingGua(yearBase, gender){
+      const dr = digitRootOfYY(yearBase); let g;
+      if(yearBase >= 2000){ g = (gender==='M') ? (9-dr) : (6+dr); }
+      else { g = (gender==='M') ? (10-dr) : (5+dr); }
+      while(g<=0) g+=9; while(g>9) g-=9;
+      if(g===5) g = (gender==='M') ? 2 : 8;
+      return g;
+    }
+
+    function judge(){
+      const v = $('#birth').value;
+      const gender = $('#gender').value;
+      const parsed = parseDateInput(v);
+      if(!parsed){ $('#out').style.display='block'; $('#out').innerHTML='<h3>請先選擇有效日期</h3><div class="hint">支援 1931–2030 年。</div>'; return; }
+      if(!gender){ $('#out').style.display='block'; $('#out').innerHTML='<h3>請選擇性別</h3><div class="hint">男生或女生皆可。</div>'; return; }
+
+      const {y,m,num} = parsed;
+      const lichun = LICHUN[y];
+      if(!lichun){ $('#out').style.display='block'; $('#out').innerHTML=`<h3>超出資料範圍</h3><div class="hint">目前僅內建 1931–2030，您選擇的是 <b>${y}</b> 年。</div>`; return; }
+
+      const lcNum = ymdToNum(lichun);
+      const isBefore = num < lcNum; // 立春當日與之後 = 已過
+      const relation = isBefore ? `在 <b>${lichun}</b>（該年立春）之前` : `在 <b>${lichun}</b>（該年立春）之後或當日`;
+      const badgeCls = isBefore ? 'warn' : 'ok';
+
+      const yearForCalc = isBefore ? (y-1) : y;
+      const monthText = `${String(m).padStart(2,'0')} 月`;
+
+      const g = mingGua(yearForCalc, gender);
+      const group = EAST.has(g) ? '東四命' : '西四命';
+      const guaName = GUA_NAME[g] || '';
+      const goodDirs = EAST.has(g)
+        ? ['北方','東方','南方','東南方']
+        : ['西南方','西方','西北方','東北方'];
+
+      const html = `
+        <h3>判斷結果 <span class="pill ${badgeCls}">${isBefore ? '立春之前' : '立春之後（含當日）'}</span></h3>
+        <div>生日 <b>${v}</b> 位於：${relation}。</div>
+        <div style="margin-top:6px">出生月份：<b>${monthText}</b>；性別：<b>${gender==='M'?'男生':'女生'}</b></div>
+        <div style="margin-top:8px">立春修正後年份：<b>${yearForCalc}</b></div>
+        <div style="margin-top:8px">命卦：<b>${g}</b>（<b>${guaName}</b>卦） → <b>${group}</b></div>
+        <div style="margin-top:10px">${group}的<b>好方位</b>：<b>${goodDirs.join('／')}</b></div>
+        <div class="hint" style="margin-top:6px">規則：立春當日視為已過立春；立春前以前年（${y-1}），之後以當年（${y}）。</div>
+        <div class="hint" style="margin-top:6px">驗證例：男性 1966/02/01（立春前→計 1965 年）→ 艮卦 → 西四命 → 好方位：西南方／西方／西北方／東北方。</div>
+      `;
+      $('#out').style.display='block'; $('#out').innerHTML = html;
+    }
+
+    function fillTable(){
+      const tbl = $('#table');
+      const years = Object.keys(LICHUN).map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+      let html = '<thead><tr><th>西元年</th><th>立春日期</th></tr></thead><tbody>';
+      for(const y of years) html += `<tr><td>${y}</td><td>${LICHUN[y]}</td></tr>`;
+      html += '</tbody>'; tbl.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const today=new Date(); const yyyy=today.getFullYear(); const mm=String(today.getMonth()+1).padStart(2,'0'); const dd=String(today.getDate()).padStart(2,'0');
+      const iso=`${yyyy}-${mm}-${dd}`; const input=document.getElementById('birth'); const min=input.getAttribute('min'); const max=input.getAttribute('max');
+      if(iso>=min && iso<=max) input.value=iso;
+      fillTable();
+      document.getElementById('checkBtn').addEventListener('click', judge);
+      document.getElementById('todayBtn').addEventListener('click', () => { input.value = iso; judge(); });
+    });
+  </script>
+</body>
+</html>
